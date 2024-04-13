@@ -1,84 +1,72 @@
-const chai = require('chai');
-const chaiHttp = require('chai-http');
-const app = require('../app');
+const request = require('supertest');
+const express = require('express');
+const app = express(); 
+const userRoutes = require('../routes/userRoutes');
 const userModel = require('../models/userModel');
 
-chai.use(chaiHttp);
-const expect = chai.expect;
+app.use(express.json()); 
+app.use('/users', userRoutes); 
 
 describe('User API', () => {
-  let token = ''; 
+  let token = '';
 
-  before((done) => {
+  beforeAll(async (done) => {
     const credentials = {
       username: 'testuser',
       password: 'testpassword'
     };
 
-    chai.request(app)
+    const response = await request(app)
       .post('/login')
-      .send(credentials)
-      .end((err, res) => {
-        token = res.body.token; 
-        done();
-      });
+      .send(credentials);
+
+    token = response.body.token;
+    done();
   });
 
-  describe('POST /users', () => {
-    it('should create a new user', (done) => {
-      const newUser = {
-        username: 'testuser',
-        password: 'testpassword'
-      };
+  test('POST /users - should create a new user', async () => {
+    const newUser = {
+      username: 'testuser',
+      password: 'testpassword'
+    };
 
-      chai.request(app)
-        .post('/users')
-        .set('Authorization', `Bearer ${token}`) 
-        .send(newUser)
-        .end((err, res) => {
-          expect(res).to.have.status(201);
-          expect(res.body).to.be.a('object');
-          expect(res.body).to.have.property('message').to.equal('User created successfully');
-          expect(res.body.user).to.have.property('id');
-          expect(res.body.user).to.have.property('username').to.equal(newUser.username);
-          done();
-        });
-    });
+    const response = await request(app)
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newUser);
+
+    expect(response.status).toBe(201);
+    expect(response.body).toBeInstanceOf(Object);
+    expect(response.body).toHaveProperty('message', 'User created successfully');
+    expect(response.body.user).toHaveProperty('id');
+    expect(response.body.user).toHaveProperty('username', newUser.username);
   });
 
-  describe('GET /users/:id', () => {
-    it('should get a user by ID', (done) => {
-      const userId = 1; 
+  test('GET /users/:id - should get a user by ID', async () => {
+    const userId = 1;
 
-      chai.request(app)
-        .get(`/users/${userId}`)
-        .set('Authorization', `Bearer ${token}`) 
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.body).to.be.a('object');
-          expect(res.body).to.have.property('user');
-          expect(res.body.user).to.have.property('id').to.equal(userId);
-          done();
-        });
-    });
+    const response = await request(app)
+      .get(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toBeInstanceOf(Object);
+    expect(response.body).toHaveProperty('user');
+    expect(response.body.user).toHaveProperty('id', userId);
   });
 
-  describe('POST /login', () => {
-    it('should authenticate user and generate JWT token', (done) => {
-      const credentials = {
-        username: 'testuser',
-        password: 'testpassword'
-      };
+  test('POST /login - should authenticate user and generate JWT token', async () => {
+    const credentials = {
+      username: 'testuser',
+      password: 'testpassword'
+    };
 
-      chai.request(app)
-        .post('/login')
-        .send(credentials)
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.body).to.be.a('object');
-          expect(res.body).to.have.property('token');
-          done();
-        });
-    });
+    const response = await request(app)
+      .post('/login')
+      .send(credentials);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toBeInstanceOf(Object);
+    expect(response.body).toHaveProperty('token');
   });
 });
