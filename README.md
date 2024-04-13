@@ -8,8 +8,6 @@ This project is a RESTful API for managing a simple blog application. It provide
 
 ## Installation
 
-Install my-project with npm
-
 ```bash 
   Clone the Repository:
   git clone <Assignment_1>
